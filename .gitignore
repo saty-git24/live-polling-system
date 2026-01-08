@@ -1,0 +1,41 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Build outputs
+frontend/build/
+backend/dist/
+build/
+dist/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+
+# Lockfiles (optional)
+# package-lock.json
+# yarn.lock
+
+# Misc
+*.tgz
+*.cache
+
+# Ignore compiled TypeScript in root if any
+*.tsbuildinfo
