@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PollProvider } from './context/PollContext';
 import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/ToastContainer';
@@ -11,9 +11,58 @@ import { Sparkles } from 'lucide-react';
 function App() {
   const [role, setRole] = useState<'teacher' | 'student' | null>(null);
   const [selectedRole, setSelectedRole] = useState<'teacher' | 'student' | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Recover user role from sessionStorage on mount
+  // sessionStorage is tab-specific - each new tab is a new user
+  useEffect(() => {
+    const savedRole = sessionStorage.getItem('userRole') as 'teacher' | 'student' | null;
+    if (savedRole) {
+      setRole(savedRole);
+    }
+    setIsLoading(false);
+  }, []);
+
+  // Save role to sessionStorage whenever it changes
+  // Only persists for the current tab
+  const handleSetRole = (newRole: 'teacher' | 'student') => {
+    sessionStorage.setItem('userRole', newRole);
+    setRole(newRole);
+  };
 
   const [teacherView, setTeacherView] = useState<'main' | 'history' | 'result'>('main');
   const [openPollId, setOpenPollId] = useState<string | number | null>(null);
+
+  // Save teacher view state to sessionStorage whenever it changes
+  useEffect(() => {
+    if (role === 'teacher') {
+      sessionStorage.setItem('teacherView', teacherView);
+      if (openPollId !== null) {
+        sessionStorage.setItem('openPollId', String(openPollId));
+      } else {
+        sessionStorage.removeItem('openPollId');
+      }
+    }
+  }, [teacherView, openPollId, role]);
+
+  // Initialize teacher view from sessionStorage on mount
+  useEffect(() => {
+    if (role === 'teacher') {
+      const savedTeacherView = sessionStorage.getItem('teacherView') as 'main' | 'history' | 'result' | null;
+      const savedPollId = sessionStorage.getItem('openPollId');
+      
+      if (savedTeacherView) {
+        setTeacherView(savedTeacherView);
+      }
+      if (savedPollId) {
+        setOpenPollId(savedPollId);
+      }
+    }
+  }, [role]);
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-white flex items-center justify-center" />;
+  }
 
   if (!role) {
     return (
@@ -70,7 +119,7 @@ function App() {
 
         {/* Continue Button */}
         <button
-            onClick={() => selectedRole && setRole(selectedRole)}
+            onClick={() => selectedRole && handleSetRole(selectedRole)}
             disabled={!selectedRole}
             className={`px-16 py-4 rounded-full text-white font-semibold text-lg transition-all shadow-lg ${
                 selectedRole 

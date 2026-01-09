@@ -142,7 +142,8 @@ export function PollProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_POLL_HISTORY', payload: safeHistory });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load data' });
-      addToast({ type: 'error', message: 'Failed to load polls' });
+      // Don't show toast for initial data load failures - fails silently if server is not ready
+      // Only show toasts for user-initiated actions (create, vote, end poll)
     }
   }
 

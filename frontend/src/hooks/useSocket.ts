@@ -10,6 +10,12 @@ interface UseSocketReturn {
   error: string | null;
 }
 
+// Global flag to track if this is the initial connection in a session
+// We don't show toast on initial connection (page load/refresh)
+// Only show toasts on actual reconnection after disconnection
+let isInitialConnection = true;
+let hasBeenConnected = false;
+
 export function useSocket(): UseSocketReturn {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,27 +49,41 @@ export function useSocket(): UseSocketReturn {
       console.log('Socket connected');
       setConnected(true);
       setError(null);
-      try { toastRef.add && toastRef.add({ type: 'success', message: 'Connected to server' }); } catch (e) {}
+      // Don't show toast on initial page load/refresh - only on actual reconnections
+      if (hasBeenConnected && !isInitialConnection) {
+        try { toastRef.add && toastRef.add({ type: 'success', message: 'Reconnected to server' }); } catch (e) {}
+      }
+      isInitialConnection = false;
+      hasBeenConnected = true;
     });
 
     socket.on('disconnect', (reason) => {
       console.log('Socket disconnected:', reason);
       setConnected(false);
       setError('Connection lost. Attempting to reconnect...');
-      try { toastRef.add && toastRef.add({ type: 'error', message: 'Connection lost. Reconnecting...' }); } catch (e) {}
+      // Only show disconnect toast if it's not an intentional client disconnect
+      if (reason !== 'io client disconnect') {
+        try { toastRef.add && toastRef.add({ type: 'error', message: 'Connection lost. Reconnecting...' }); } catch (e) {}
+      }
     });
 
     socket.on('connect_error', (err) => {
       console.error('Socket connection error:', err);
       setError('Failed to connect to server');
-      try { toastRef.add && toastRef.add({ type: 'error', message: 'Failed to connect to server' }); } catch (e) {}
+      // Only show error toast on initial connection failure
+      if (isInitialConnection) {
+        try { toastRef.add && toastRef.add({ type: 'error', message: 'Failed to connect to server' }); } catch (e) {}
+      }
     });
 
     socket.on('reconnect', (attemptNumber) => {
       console.log('Socket reconnected after', attemptNumber, 'attempts');
       setConnected(true);
       setError(null);
-      try { toastRef.add && toastRef.add({ type: 'success', message: 'Reconnected to server' }); } catch (e) {}
+      // Only show reconnect toast if we were previously connected (not initial connection)
+      if (hasBeenConnected) {
+        try { toastRef.add && toastRef.add({ type: 'success', message: 'Reconnected to server' }); } catch (e) {}
+      }
     });
 
     socket.on('reconnect_failed', () => {

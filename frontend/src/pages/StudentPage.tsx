@@ -39,6 +39,9 @@ export function StudentPage() {
     }
     const kickedHandler = (payload: any) => {
       setKicked(payload || { reason: 'Removed by teacher' });
+      // Clear student session so they start fresh on refresh
+      sessionStorage.removeItem('studentId');
+      sessionStorage.removeItem('studentName');
     };
     socket?.on('participant:kicked', kickedHandler);
     return () => {
