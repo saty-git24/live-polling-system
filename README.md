@@ -1,121 +1,183 @@
 # Live Polling System
 
->A simple live polling application (teacher + students) with real-time updates via Socket.IO. This repository contains a TypeScript/Node backend and a React + TypeScript frontend.
+A real-time polling web application for interactive classroom environments. Instructors can create and manage live polls, while students participate and view results instantly.
 
 ---
 
-## Repository layout
+## Tech Stack
 
-- `backend/` — Express + TypeScript server, Socket.IO handlers, and poll business logic.
-- `frontend/` — React (CRA) + TypeScript single-page app with Tailwind styles.
+### Backend
+- Node.js + Express.js
+- TypeScript
+- Socket.IO
+- PostgreSQL (optional, in-memory fallback for development)
+- dotenv
+
+### Frontend
+- React 18
+- TypeScript
+- Tailwind CSS
+- Socket.IO Client
+- Axios
 
 ---
 
 ## Features
 
-- Create live polls from the teacher UI
-- Students join and submit votes in real time
-- Teacher can end polls and view history
-- Server-enforced rule: teacher may ask a new question only when there is no active poll OR all connected students have answered
-- In-memory fallback when the Postgres DB is not available (for local development)
+### Instructor
+- Create polls with 2–10 options
+- Set poll duration (5–60 seconds)
+- Monitor live voting results
+- End polls manually or automatically
+- View poll history
+- Only one active poll allowed at a time
+
+### Student
+- Join live polls instantly
+- One vote per poll
+- View real-time results
+- Mobile and desktop friendly UI
+
+### System
+- Real-time updates using WebSockets
+- Automatic poll expiration
+- Server-side concurrency validation
+- In-memory storage fallback if database is unavailable
 
 ---
 
-## Prerequisites
+## Project Structure
 
-- Node.js (18+ recommended) and npm installed
-- (Optional) PostgreSQL if you want persistent storage — otherwise the server will use an in-memory fallback for development
-
----
-
-## Quick start (development)
-
-1. Clone the repository (if not already):
-
-```powershell
-git clone https://github.com/saty-git24/live-polling-system.git
-cd live-polling
+```
+live-polling-system/
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── sockets/
+│   │   └── server.ts
+│   ├── package.json
+│   └── tsconfig.json
+│
+└── frontend/
+    ├── src/
+    │   ├── components/
+    │   ├── services/
+    │   ├── types/
+    │   └── App.tsx
+    ├── package.json
+    └── tsconfig.json
 ```
 
-2. Backend
+---
 
-```powershell
+## Setup Instructions
+
+### Prerequisites
+- Node.js v18+
+- npm
+- PostgreSQL (optional)
+
+---
+
+### Clone Repository
+```bash
+git clone https://github.com/saty-git24/live-polling-system.git
+cd live-polling-system
+```
+
+---
+
+### Backend Setup
+```bash
 cd backend
 npm install
-# Start the backend in dev mode (uses nodemon + ts-node)
+```
+
+Create `.env` in `backend/`:
+```env
+PORT=5000
+NODE_ENV=development
+DATABASE_URL=
+CLIENT_URL=http://localhost:3000
+```
+
+Start backend:
+```bash
 npm run dev
 ```
 
-The backend listens on `PORT` (default `5000`). The server exposes HTTP API under `/api` and initializes Socket.IO on the same port.
+---
 
-3. Frontend
-
-Open a second terminal and run:
-
-```powershell
+### Frontend Setup
+```bash
 cd frontend
 npm install
-npm start
 ```
 
-The frontend dev server runs on `http://localhost:3000` by default and connects to the backend API/socket using environment variables.
-
-### Frontend environment variables
-
-Edit `frontend/.env` (or create one) to point the client at the backend if your backend runs on a different host/port:
-
-```
+Create `.env` in `frontend/`:
+```env
 REACT_APP_API_URL=http://localhost:5000/api
 REACT_APP_SOCKET_URL=http://localhost:5000
 ```
 
-The app uses these variables to connect sockets and call the REST API.
+Start frontend:
+```bash
+npm start
+```
+
+Application runs at:
+http://localhost:3000
 
 ---
 
-## Important behavior notes
+## API Overview
 
-- Server-side enforcement: `POST /api/polls` (create poll) will reject when there's an active poll and some connected students have not yet voted. This prevents accidental replacement of an active question. If you want a force-create option, consider adding a server-side `force` flag or only allowing this action from authenticated teachers (not implemented by default).
-- If the backend cannot connect to Postgres, it will run with an in-memory poll store so you can continue development without DB setup. Data will not be persisted across server restarts in that mode.
+### REST APIs
+- GET `/api/polls/current`
+- POST `/api/polls`
+- POST `/api/polls/vote`
+- POST `/api/polls/end`
+- GET `/api/polls/history`
 
----
-
-## API endpoints (selected)
-
-- `GET /api/polls/current` — returns the current active poll (or `null`)
-- `POST /api/polls` — create a new poll (body: `{ question, options: string[], duration }`)
-- `POST /api/polls/vote` — submit a vote (body: `{ pollId, studentId, optionId }`)
-- `POST /api/polls/end` — end active poll (body: `{ pollId }`)
-- `GET /api/polls/history` — get recent ended polls
-
-Sockets: the app uses Socket.IO to broadcast `poll:new`, `poll:update`, `poll:ended`, and `participant:list` among others.
+### WebSocket Events
+- `poll:new`
+- `poll:update`
+- `poll:ended`
+- `participant:list`
 
 ---
 
-## Development tips
-
-- When testing the teacher rule that prevents creating a new poll, make sure student clients are connected (they appear in `participant:list`) and have actually submitted votes — otherwise a new poll will be refused.
-- Inspect backend logs for debugging messages — the service logs when it falls back to in-memory mode and logs vote/create actions.
-
----
-
-## Deploying / Production notes
-
-- Configure a proper Postgres instance and set connection values in `backend/.env` or your deployment environment.
-- In production, run `npm run build` in `frontend/` and serve the static build from a CDN or static host.
-- The current project does not include authentication — consider adding it before deploying to public environments if you need access controls.
+## Deployment Notes
+- Configure PostgreSQL for production
+- Set `NODE_ENV=production`
+- Build frontend using `npm run build`
+- Serve frontend via Netlify, Vercel, or S3
+- Enable HTTPS and proper CORS settings
 
 ---
 
-## Contributing
-
-1. Create a feature branch
-2. Open a PR against `main` with a clear description
-
----
-
-If you'd like, I can also add a minimal `README` to each subfolder, add a CI workflow (GitHub Actions), or push this file to the repository for you. Tell me which next step you'd like.
+## Limitations
+- No authentication
+- Single active poll only
+- In-memory storage during development
+- No persistent user sessions
 
 ---
 
-© Live Polling System# live-polling-system
+## Future Enhancements
+- Authentication and authorization
+- Multi-room polling
+- Analytics dashboard
+- Export results (CSV/PDF)
+- Accessibility improvements
+
+---
+
+## Repository
+https://github.com/saty-git24/live-polling-system
+
+© 2026 Live Polling System — Educational Project
